@@ -75,14 +75,18 @@ class DBManager:
             print(f"Error retrieving rows from 'e_bern_parsed': {e}")
             return []
 
-    def summarize_text(self, text):
-        """Summarize the given text using the locally running Llama3.1 model."""
-        task_instruction = "Folgender Text ist ein Gerichtsurteil. Fasse den Text detailliert zusammen: \n\n"
-        full_prompt = f"{task_instruction}{text}"
+    def summarize_text(self, text, model):
+        task_instruction = (
+        "Du bist ein deutschsprachiger Jurist und hilfst dabei Urteile zusammenzufassen."
+        "Bitte ergänze ausschließlich auf Deutsch. "
+        "Folgender Text ist ein Gerichtsurteil. "
+        "Fasse diesem Fall detailliert zusammen: \n\n"
+        )
+        full_prompt = f"{task_instruction}{text} \n\n Zusammenfassung  in Bezug auf den vorangehenden Text:\n <hier einfügen> "
 
         try:
             response = ollama.chat(
-                model='llama3.1',
+                model=model,
                 messages=[{'role': 'user', 'content': full_prompt}]
             )
             summarized_text = response['message']['content']
@@ -90,20 +94,24 @@ class DBManager:
         except ollama.ResponseError as e:
             print(f"Error: {e.error}")
             if e.status_code == 404:
-                print("Model not found. Make sure the llama3.1 model is running locally.")
+                print("Model not found. Make sure the model is running locally.")
         except Exception as err:
             print(f"An error occurred: {err}")
         
         return "Failed to summarize text."
     
-    def extract_sachverhalt(self, text):
-        """Extract sachverhalt from the given text using Llama3.1 model."""
-        task_instruction = "Extrahiere den Sachverhalt aus folgendem Gerichtsurteil:\n\n"
-        full_prompt = f"{task_instruction}{text}"
+    def extract_sachverhalt(self, text, model):
+        task_instruction = (
+        "Du bist ein deutschsprachiger Jurist und hilfst dabei Urteile zusammenzufassen."
+        "Bitte ergänze ausschließlich auf Deutsch. "
+        "Folgender Text ist ein Gerichtsurteil. "
+        "Wie lautet der genaue Sachverhalt in diesem Fall? \n\n"
+        )
+        full_prompt = f"{task_instruction}{text} \n\n Sachverhalt in Bezug auf den vorangehenden Text:\n <hier einfügen> "
 
         try:
             response = ollama.chat(
-                model='llama3.1',
+                model=model,
                 messages=[{'role': 'user', 'content': full_prompt}]
             )
             sachverhalt = response['message']['content']
@@ -115,14 +123,19 @@ class DBManager:
         
         return "Failed to extract sachverhalt."
 
-    def extract_entscheid(self, text):
-        """Extract entscheid from the given text using Llama3.1 model."""
-        task_instruction = "Extrahiere den Entscheid aus folgendem Gerichtsurteil: \n\n"
-        full_prompt = f"{task_instruction}{text}"
+    def extract_entscheid(self, text, model):
+        task_instruction = (
+        "Du bist ein deutschsprachiger Jurist und hilfst dabei Urteile zusammenzufassen."
+        "Bitte ergänze ausschließlich auf Deutsch. "
+        "Folgender Text ist ein Gerichtsurteil. "
+        "Wie wurde in diesem Fall entschieden?: \n\n"
+        
+        )
+        full_prompt = f"{task_instruction}{text} \n\n Entscheid in Bezug auf den vorangehenden Text:\n <hier einfügen> "
 
         try:
             response = ollama.chat(
-                model='llama3.1',
+                model=model,
                 messages=[{'role': 'user', 'content': full_prompt}]
             )
             entscheid = response['message']['content']
@@ -134,14 +147,18 @@ class DBManager:
         
         return "Failed to extract entscheid."
 
-    def extract_grundlagen(self, text):
-        """Extract grundlagen from the given text using Llama3.1 model."""
-        task_instruction = "Folgender Text ist ein Gerichtsurteil. Extrahiere die Rechtsgrundlagen:\n\n"
-        full_prompt = f"{task_instruction}{text}"
+    def extract_grundlagen(self, text, model):
+        task_instruction = (
+        "Du bist ein deutschsprachiger Jurist und hilfst dabei Urteile zusammenzufassen. "
+        "Bitte ergänze ausschließlich auf Deutsch. "
+        "Folgender Text ist ein Gerichtsurteil. "
+        "Extrahiere die Rechtsgrundlage und die für den Entscheid relevanten Artikel präzise und klar. Welche Aritkel sind zur Anwedung gekommen?\n\n"
+    )
+        full_prompt = f"{task_instruction}{text} \n\n Rechtsgrundlage in Bezug auf den vorangehenden Text:\n <hier einfügen> "
 
         try:
             response = ollama.chat(
-                model='llama3.1',
+                model=model,
                 messages=[{'role': 'user', 'content': full_prompt}]
             )
             grundlagen = response['message']['content']
@@ -168,7 +185,7 @@ class DBManager:
             print(f"Error counting tokens: {e}")
             return 0
 
-    def store_summary(self, parsed_id, summary_text, token_count_original, token_count_summary, sachverhalt, token_count_sachverhalt, entscheid, token_count_entscheid, grundlagen, token_count_grundlagen):
+    def store_summary(self, parsed_id, summary_text, token_count_original, model, token_count_summary, sachverhalt, token_count_sachverhalt, entscheid, token_count_entscheid, grundlagen, token_count_grundlagen):
         """Store the summarized content and extracted details in the e_bern_summary table."""
         self.connect()
         try:
@@ -186,28 +203,46 @@ class DBManager:
                     token_count_entscheid,
                     grundlagen,
                     token_count_grundlagen
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (parsed_id, summary_text, token_count_original, 'llama3.1', token_count_summary, sachverhalt, token_count_sachverhalt, entscheid, token_count_entscheid, grundlagen, token_count_grundlagen))
+                ) VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (parsed_id, summary_text, token_count_original, model, token_count_summary, sachverhalt, token_count_sachverhalt, entscheid, token_count_entscheid, grundlagen, token_count_grundlagen))
             self.conn.commit()
             print(f"Inserted summary and details for parsed_id {parsed_id}")
         except Error as e:
             print(f"Error inserting summary into 'e_bern_summary': {e}")
 
-    def process_and_store_summaries(self):
+    def process_and_store_summaries(self, model):
         """Process all entries in e_bern_parsed and store their summaries in e_bern_summary."""
         rows = self.get_all_rows_e_bern_parsed()
         for row in rows:
             parsed_id, pdf_text = row
+
+            # Check if the pdf_text has already been summarized
+            if self.is_already_summarized(parsed_id, model):
+                print(f"Skipping parsed_id {parsed_id}: already summarized with model {model}")
+                continue
+
             token_count_original = self.count_tokens(pdf_text)
-            summary_text = self.summarize_text(pdf_text)
+            summary_text = self.summarize_text(pdf_text, model)
             token_count_summary = self.count_tokens(summary_text)
-            sachverhalt = self.extract_sachverhalt(pdf_text)
+            sachverhalt = self.extract_sachverhalt(pdf_text, model)
             token_count_sachverhalt = self.count_tokens(sachverhalt)
-            entscheid = self.extract_entscheid(pdf_text)
+            entscheid = self.extract_entscheid(pdf_text, model)
             token_count_entscheid = self.count_tokens(entscheid)
-            grundlagen = self.extract_grundlagen(pdf_text)
+            grundlagen = self.extract_grundlagen(pdf_text, model)
             token_count_grundlagen = self.count_tokens(grundlagen)
-            self.store_summary(parsed_id, summary_text, token_count_original, token_count_summary, sachverhalt, token_count_sachverhalt, entscheid, token_count_entscheid, grundlagen, token_count_grundlagen)
+            self.store_summary(parsed_id, summary_text, token_count_original, model, token_count_summary, sachverhalt, token_count_sachverhalt, entscheid, token_count_entscheid, grundlagen, token_count_grundlagen)
+
+    def is_already_summarized(self, parsed_id, model):
+        """Check if the given parsed_id has already been summarized in e_bern_summary."""
+        self.connect()
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT 1 FROM e_bern_summary WHERE parsed_id = %s and model = %s LIMIT 1", (parsed_id, model))
+            result = cursor.fetchone()
+            return result is not None
+        except Error as e:
+            print(f"Error checking if parsed_id {parsed_id} is already summarized: {e}")
+            return False
 
     def drop_table(self, table_name):
         """Drops (deletes) a table from the database."""
@@ -223,6 +258,9 @@ class DBManager:
 # Example usage
 if __name__ == "__main__":
     db_manager = DBManager()
-    db_manager.drop_table('e_bern_summary')
-    db_manager.create_summary_table()
-    db_manager.process_and_store_summaries()
+    #db_manager.drop_table('e_bern_summary')
+    #db_manager.create_summary_table()
+
+    # pull the model with ollama pull to have it available locally
+    # llama3 llama3.1 llama3:70B qwen2 mistrl mistral-large mistral-nemo yarn-mistral (bigger context) gemma gemma2 wizardlm2 phi3:14b command-r command-r-plus glm4
+    db_manager.process_and_store_summaries('gemma2')
