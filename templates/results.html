@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>Search Results</h1>
+    <h2>Rechtsgrundlagen: {{ user_input }}</h2>
+    {% for article in articles %}
+        <div style="margin-bottom: 20px;">
+            <h3>{{ article.shortName }} (SRN: {{ article.srn }})</h3>
+            {% if article.book_name %}
+                <p><strong> {{ article.book_name }}</strong></p>
+            {% endif %}
+            {% if article.part_name %}
+                <p><strong>{{ article.part_name }}</strong></p>
+            {% endif %}
+            {% if article.title_name %}
+                <p><strong> {{ article.title_name }}</strong></p>
+            {% endif %}
+            {% if article.sub_title_name %}
+                <p><strong> {{ article.sub_title_name }}</strong></p>
+            {% endif %}
+            {% if article.chapter_name %}
+                <p><strong> {{ article.chapter_name }}</strong></p>
+            {% endif %}
+            {% if article.sub_chapter_name %}
+                <p><strong> {{ article.sub_chapter_name }}</strong></p>
+            {% endif %}
+            {% if article.section_name %}
+                <p><strong> {{ article.section_name }}</strong></p>
+            {% endif %}
+            {% if article.sub_section_name %}
+                <p><strong> {{ article.sub_section_name }}</strong></p>
+            {% endif %}
+            <p><strong>Article ID:</strong> {{ article.art_id }}</p>
+            <p><strong>Full Article:</strong> {{ article.full_article }}</p>
+        </div>
+    {% endfor %}
+    <h2>Präzedenzfälle zu : {{ user_input }}</h2>
+    {% for doc in documents %}
+        <h3>Origin: {{ doc.origin }}</h3>
+        <h4>Forderung: {{ doc.forderung }}</h4>
+        <a href="https://www.entscheidsuche.ch/docs/{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a>
+        <p>ID: {{ doc.id }}, Parsed ID: {{ doc.parsed_id }}, Similarity: {{ doc.similarity }}</p>
+        <p>{% if doc.origin == 'Summary' %}{{ doc.text }}{% elif doc.origin == 'Sachverhalt' %}{{ doc.sachverhalt }}{% elif doc.origin == 'Entscheide' %}{{ doc.entscheid }}{% elif doc.origin == 'Grundlagen' %}{{ doc.grundlagen }}{% endif %}</p>
+    {% endfor %}
+    
+
+    <a href="/">Back to search</a>
+</body>
+</html>
