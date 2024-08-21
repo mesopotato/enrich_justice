@@ -71,7 +71,7 @@ class DBManager:
         self.connect()
         try:
             cursor = self.conn.cursor()
-            cursor.execute("SELECT ID, text_cleaned FROM e_bern_parsed where tokens is null and language = 'de' and text_cleaned is not null")
+            cursor.execute("SELECT ID, text_cleaned FROM e_bern_parsed where tokens < 128000 and language = 'de' and text_cleaned is not null")
             rows = cursor.fetchall()
             return rows
         except Error as e:
@@ -334,12 +334,12 @@ class DBManager:
         try:
             cursor = self.conn.cursor()
             cursor.execute("""
-                SELECT ID, srn, art_id, type_cd, type_id, vector
+                SELECT ID, srn, art_id, type_cd, type_id, vector, source_table
                 FROM articles_vector
             """)
             rows = cursor.fetchall()
             # return all attributet of the articles_vector table
-            return [(row[0], row[1], row[2], row[3], row[4], self.unpack_vector(row[5])) for row in rows]
+            return [(row[0], row[1], row[2], row[3], row[4], self.unpack_vector(row[5]), row[6]) for row in rows]
         except Error as e:
             print(f"Error retrieving vectors: {e}")
             return []
@@ -347,9 +347,9 @@ class DBManager:
     def find_similar_aritcle_vectors(self, target_vector, vectors_list, top_n):
         """Find and return the top N most similar vectors in the database."""
         similarities = []
-        for id, srn, art_id, type_cd, type_id, vector in vectors_list:
+        for id, srn, art_id, type_cd, type_id, vector, source_table in vectors_list:
             similarity = 1 - cosine(target_vector, vector)  # Cosine similarity
-            similarities.append((id, srn, art_id, type_cd, type_id, similarity))
+            similarities.append((id, srn, art_id, type_cd, type_id, similarity, vector,  source_table))
         # Sort by similarity in descending order and return the top N results
         similarities.sort(key=lambda x: x[5], reverse=True)
         return similarities[:top_n]
@@ -360,8 +360,9 @@ class DBManager:
         try:
             cursor = self.conn.cursor()
             texts = []
-            for id, srn, art_id, type_cd, type_id, vector in vector_list:
-                cursor.execute("""SELECT 
+            for id, srn, art_id, type_cd, type_id, similarity, vector, source_table in vector_list:
+                if source_table == 'articles':
+                    cursor.execute("""SELECT 
                             a.srn, 
                             a.shortName,
                             a.book_name,
@@ -402,23 +403,85 @@ class DBManager:
                             a.section_name, 
                             a.sub_section_name, 
                             a.article_id ;""", (srn, art_id))
-                row = cursor.fetchone()
-                if row:
+                    row = cursor.fetchone()
+                    if row:
                     # You can append just the summary_text, or the entire row, depending on what you need
-                    texts.append({
-                        'srn': row[0],
-                        'shortName': row[1],
-                        'book_name': row[2],
-                        'part_name': row[3],
-                        'title_name': row[4],
-                        'sub_title_name': row[5],
-                        'chapter_name': row[6],
-                        'sub_chapter_name': row[7],
-                        'section_name': row[8],
-                        'sub_section_name': row[9],
-                        'art_id': row[10],
-                        'full_article': row[11]
-                    })
+                        texts.append({
+                            'srn': row[0],
+                            'shortName': row[1],
+                            'book_name': row[2],
+                            'part_name': row[3],
+                            'title_name': row[4],
+                            'sub_title_name': row[5],
+                            'chapter_name': row[6],
+                            'sub_chapter_name': row[7],
+                            'section_name': row[8],
+                            'sub_section_name': row[9],
+                            'art_id': row[10],
+                            'full_article': row[11],
+                            'source_table': source_table,
+                            'similarity': similarity
+                            })
+                elif source_table == 'articles_bern':
+                    cursor.execute("""SELECT                                                  
+                            a.systematic_number, 
+                            a.abbreviation,
+                            a.book_name, 
+                            a.part_name, 
+                            a.title_name, 
+                            a.sub_title_name, 
+                            a.chapter_name, 
+                            a.sub_chapter_name, 
+                            a.section_name, 
+                            a.sub_section_name, 
+                            a.article_number,
+                            GROUP_CONCAT(
+                                CONCAT_WS(' ',
+                                    IFNULL(a.article_title , ''),
+                                    IFNULL(a.paragraph_text , '')
+                                ) 
+                                ORDER BY a.id SEPARATOR ' '
+                            ) AS full_article
+
+                            from articles_bern a 
+                            
+                            WHERE 
+                            a.systematic_number = %s
+                            and a.article_number = %s
+                                   
+                            GROUP BY
+                            a.systematic_number,
+                            a.abbreviation,
+                            a.book_name,
+                            a.part_name,
+                            a.title_name,
+                            a.sub_title_name,
+                            a.chapter_name,
+                            a.sub_chapter_name,
+                            a.section_name,
+                            a.sub_section_name,
+                            a.article_number
+                            ;
+                            """, (srn, art_id))
+                    row = cursor.fetchone()
+                    if row:
+                    # You can append just the summary_text, or the entire row, depending on what you need
+                        texts.append({
+                            'srn': row[0],
+                            'shortName': row[1],
+                            'book_name': row[2],
+                            'part_name': row[3],
+                            'title_name': row[4],
+                            'sub_title_name': row[5],
+                            'chapter_name': row[6],
+                            'sub_chapter_name': row[7],
+                            'section_name': row[8],
+                            'sub_section_name': row[9],
+                            'art_id': row[10],
+                            'full_article': row[11],
+                            'source_table': source_table,
+                            'similarity': similarity
+                            })
             return texts
         except Error as e:
             print(f"Error retrieving texts from vectors: {e}")

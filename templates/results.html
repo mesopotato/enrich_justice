@@ -11,6 +11,7 @@
     {% for article in articles %}
         <div style="margin-bottom: 20px;">
             <h3>{{ article.shortName }} (SRN: {{ article.srn }})</h3>
+            <h4>{% if article.source_table == 'articles' %} Fedlex {% elif article.source_table == 'articles_bern' %}Belex{% endif %} Similarity: {{ article.similarity }}</h4>
             {% if article.book_name %}
                 <p><strong> {{ article.book_name }}</strong></p>
             {% endif %}
