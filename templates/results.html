@@ -4,12 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+
+        h4 {
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        div {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        p {
+            margin: 5px 0;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .back-link a {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-link a:hover {
+            background-color: #2980b9;
+        }
+    </style>
 </head>
 <body>
     <h1>Search Results</h1>
     <h2>Rechtsgrundlagen: {{ user_input }}</h2>
     {% for article in articles %}
-        <div style="margin-bottom: 20px;">
+        <div>
             <h3>{{ article.shortName }} (SRN: {{ article.srn }})</h3>
             <h4>{% if article.source_table == 'articles' %} Fedlex {% elif article.source_table == 'articles_bern' %}Belex{% endif %} Similarity: {{ article.similarity }}</h4>
             {% if article.book_name %}
@@ -42,14 +116,17 @@
     {% endfor %}
     <h2>Präzedenzfälle zu : {{ user_input }}</h2>
     {% for doc in documents %}
-        <h3>Origin: {{ doc.origin }}</h3>
-        <h4>Forderung: {{ doc.forderung }}</h4>
-        <a href="https://www.entscheidsuche.ch/docs/{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a>
-        <p>ID: {{ doc.id }}, Parsed ID: {{ doc.parsed_id }}, Similarity: {{ doc.similarity }}</p>
-        <p>{% if doc.origin == 'Summary' %}{{ doc.text }}{% elif doc.origin == 'Sachverhalt' %}{{ doc.sachverhalt }}{% elif doc.origin == 'Entscheide' %}{{ doc.entscheid }}{% elif doc.origin == 'Grundlagen' %}{{ doc.grundlagen }}{% endif %}</p>
+        <div>
+            <h3>Origin: {{ doc.origin }}</h3>
+            <h4>Forderung: {{ doc.forderung }}</h4>
+            <a href="https://www.entscheidsuche.ch/docs/{{ doc.file_path }}" target="_blank">{{ doc.file_path }}</a>
+            <p>ID: {{ doc.id }}, Parsed ID: {{ doc.parsed_id }}, Similarity: {{ doc.similarity }}</p>
+            <p>{% if doc.origin == 'Summary' %}{{ doc.text }}{% elif doc.origin == 'Sachverhalt' %}{{ doc.sachverhalt }}{% elif doc.origin == 'Entscheide' %}{{ doc.entscheid }}{% elif doc.origin == 'Grundlagen' %}{{ doc.grundlagen }}{% endif %}</p>
+        </div>
     {% endfor %}
     
-
-    <a href="/">Back to search</a>
+    <div class="back-link">
+        <a href="/">Back to search</a>
+    </div>
 </body>
 </html>
