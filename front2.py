@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template
-from db import DBManager
+from postgresdb import DBManager
 from embed import generate_embedding_pure
 
 app = Flask(__name__)
@@ -22,7 +22,8 @@ def combine_and_rank_vectors(similar_summaries_vector_list, similar_sachverhalte
     for vector in similar_grundlagen_vector_list:
         combined_vectors.append((vector, "Grundlagen"))
 
-    combined_vectors.sort(key=lambda x: x[0][2], reverse=True)
+    # Sort by distance in ascending order (lower distance is higher similarity)
+    combined_vectors.sort(key=lambda x: x[0][2])  # x[0][2] is the distance
 
     top_vectors = combined_vectors[:top_n]
 
@@ -31,22 +32,13 @@ def combine_and_rank_vectors(similar_summaries_vector_list, similar_sachverhalte
 def find_similar_documents(target_vector, db, top_n):
     """Find similar documents based on user input."""
     
-    summary_vectors = db.get_all_summary_vectors()
-    print('got all summary vectors')
-    sachverhalt_vectors = db.get_all_sachverhalt_vectors()
-    print('got all sachverhalt vectors')
-    entscheid_vectors = db.get_all_entscheid_vectors()
-    print('got all entscheid vectors')
-    grundlagen_vectors = db.get_all_grundlagen_vectors()
-    print('got all grundlagen vectors')
-    
-    similar_summaries_vector_list = db.find_similar_vectors(target_vector, summary_vectors, top_n)
+    similar_summaries_vector_list = db.find_similar_vectors(target_vector, 'summary_vector', top_n)
     print('found similar summaries')
-    similar_sachverhalte_vector_list = db.find_similar_vectors(target_vector, sachverhalt_vectors, top_n)
+    similar_sachverhalte_vector_list = db.find_similar_vectors(target_vector, 'sachverhalt_vector', top_n)
     print('found similar sachverhalte')
-    similar_entscheide_vector_list = db.find_similar_vectors(target_vector, entscheid_vectors, top_n)
+    similar_entscheide_vector_list = db.find_similar_vectors(target_vector, 'entscheid_vector', top_n)
     print('found similar entscheide')
-    similar_grundlagen_vector_list = db.find_similar_vectors(target_vector, grundlagen_vectors, top_n)
+    similar_grundlagen_vector_list = db.find_similar_vectors(target_vector, 'grundlagen_vector', top_n)
     print('found similar grundlagen ... combining and ranking vectors')
     
     top_combined_vectors = combine_and_rank_vectors(similar_summaries_vector_list, 
@@ -56,15 +48,15 @@ def find_similar_documents(target_vector, db, top_n):
     print('combined and ranked vectors')
     results = []
     for vector, origin in top_combined_vectors:
-        id, parsed_id, similarity = vector
-        text_info = db.get_texts_from_vectors([(id, parsed_id, vector)])
+        id, parsed_id, distance = vector
+        text_info = db.get_texts_from_vectors([(id, parsed_id, distance)])
         if text_info:
             text = text_info[0]
             results.append({
                 "origin": origin,
-                "id": text['ID'],
+                "id": text['id'],
                 "parsed_id": text['parsed_id'],
-                "similarity": f"{similarity:.4f}",
+                "similarity": f"{distance:.4f}",
                 "text": text['summary_text'],
                 "sachverhalt": text['sachverhalt'],
                 "entscheid": text['entscheid'],
@@ -74,14 +66,12 @@ def find_similar_documents(target_vector, db, top_n):
             })
     return results
 
+
 def find_rechtsgrundlage(target_vector, db, top_n):
-    articles_vectors = db.get_all_articles_vectors()
-    print('got all articles vectors')
-    similar_vectors = db.find_similar_aritcle_vectors(target_vector, articles_vectors, top_n)
+    similar_vectors = db.find_similar_article_vectors(target_vector, top_n)
     print('found similar articles')
     similar_articles = db.get_articles_from_vectors(similar_vectors)
     print('got articles from vectors')
-
     return similar_articles
 
 @app.route("/", methods=["GET", "POST"])
