@@ -14,11 +14,13 @@ idna==3.7
 itsdangerous==2.2.0
 Jinja2==3.1.4
 jiter==0.5.0
+llmsherpa==0.1.4
 MarkupSafe==2.1.5
 mysql-connector-python==9.0.0
 numpy==2.0.1
 ollama==0.3.1
 openai==1.41.0
+psycopg2==2.9.10
 pydantic==2.8.2
 pydantic_core==2.20.1
 python-dotenv==1.0.1

@@ -12,4 +12,15 @@ pip install -r requirements.txt
 # to update requirements.txt
 pip freeze > requirements.txt
 
+# LLM sherpa Parser setup
+https://github.com/nlmatics/nlm-ingestor
+## check docker installation
+docker --version
+## Pull the docker image
+docker pull ghcr.io/nlmatics/nlm-ingestor:latest
+## Run the docker container
+### Start the server and map port 5010 (or your choice) to the container’s internal port 5001
+docker run -p 5010:5001 ghcr.io/nlmatics/nlm-ingestor:latest
+### verify that the server is running by navigating to http://localhost:5010/ in your web browser
+
 

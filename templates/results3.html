@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Search Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #2980b9;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+
+        h4 {
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        div {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        p {
+            margin: 5px 0;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .back-link a {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-link a:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Results</h1>
+    <h2>Suchbegriff: {{ user_input }}</h2>
+
+    {% if results %}
+        {% for chunk in results %}
+            <div>
+                <h3>{{ chunk.doc_name }}</h3>
+                <h4>
+                    <strong>Pfad:</strong> {{ chunk.doc_path }} <br/>
+                    <strong>Ähnlichkeitswert:</strong> {{ chunk.similarity }}
+                </h4>
+                <p><strong>Chunk ID:</strong> {{ chunk.chunk_id }} | 
+                   <strong>e_bern_raw_id:</strong> {{ chunk.e_bern_raw_id }}</p>
+                <p>
+                  <strong>Section Level:</strong> {{ chunk.section_level }}<br/>
+                  <strong>Section Name:</strong> {{ chunk.section_name }}
+                </p>
+                <p><strong>Text:</strong> {{ chunk.chunk_text }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Keine Treffer gefunden.</p>
+    {% endif %}
+
+    <div class="back-link">
+        <a href="/">Zurück zur Suche</a>
+    </div>
+</body>
+</html>
