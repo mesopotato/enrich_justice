@@ -9,7 +9,6 @@ import requests
 import struct
 import numpy as np
 
-
 # Load environment variables
 load_dotenv()
 
@@ -39,9 +38,9 @@ def connect_to_db():
     return conn, conn.cursor()
 
 def create_chunkvectors_table(cursor):
-    """Create the e_chunkvectors2 table in the database."""
+    """Create the e_chunkvectors table in the database."""
     create_table_query = """
-    CREATE TABLE IF NOT EXISTS e_chunkvectors2 (
+    CREATE TABLE IF NOT EXISTS e_chunkvectors (
         chunk_id SERIAL PRIMARY KEY,
         e_bern_raw_id INTEGER REFERENCES e_bern_raw(id),
         doc_name VARCHAR(255),
@@ -49,8 +48,9 @@ def create_chunkvectors_table(cursor):
         chunk_index INTEGER,
         chunk_text TEXT,
         chunk_embedding vector(1536),
-        section_level INTEGER,
-        section_name TEXT,
+        level INTEGER,
+        tag TEXT,
+        page INTEGER,
         token_count INTEGER
     );
     """
@@ -110,7 +110,8 @@ def process_pdf(pdf_path, api_url):
                     chunks.append({
                         "text": sentence,  # Sentence text
                         "level": block.get('level', 0),  # Block level
-                        "section": block.get('tag', '')  # Tag as section name
+                        "tag": block.get('tag', ''),  # Tag
+                        "page": block.get('page', 0) +1  # Page number
                     })
 
         return chunks
@@ -119,8 +120,6 @@ def process_pdf(pdf_path, api_url):
     except Exception as e:
         print(f"Failed to process {pdf_path}: {e}")
     return []
-
-
 
 def find_pdf_id(cursor, file_name):
     """
@@ -136,11 +135,11 @@ def find_pdf_id(cursor, file_name):
     return result[0] if result else None
 
 def insert_chunks(cursor, e_bern_raw_id, doc_name, doc_path, chunks):
-    """Insert parsed chunks into the e_chunkvectors2 table."""
+    """Insert parsed chunks into the e_chunkvectors table."""
     insert_query = """
-    INSERT INTO e_chunkvectors2 (
+    INSERT INTO e_chunkvectors (
         e_bern_raw_id, doc_name, doc_path, chunk_index,
-        chunk_text, chunk_embedding, section_level, section_name, token_count
+        chunk_text, chunk_embedding, level, tag, page, token_count
     ) VALUES %s
     """
     data = []
@@ -155,7 +154,8 @@ def insert_chunks(cursor, e_bern_raw_id, doc_name, doc_path, chunks):
             chunk["text"],
             embedding,
             chunk["level"],
-            chunk["section"],
+            chunk["tag"],
+            chunk["page"],
             token_count
         ))
 
@@ -163,7 +163,7 @@ def insert_chunks(cursor, e_bern_raw_id, doc_name, doc_path, chunks):
     extras.execute_values(cursor, insert_query, data)
 
 # Define the API URL
-llmsherpa_api_url = "http://localhost:5010/api/parseDocument?renderFormat=all&useNewIndentParser=yes"
+llmsherpa_api_url = "http://localhost:5010/api/parseDocument?renderFormat=all" # &useNewIndentParser=yes --> does not change anything
 
 def process_pdfs():
     """Main function to process all PDFs and store chunk data in the database."""
