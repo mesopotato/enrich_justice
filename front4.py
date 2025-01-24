@@ -70,7 +70,7 @@ def connect_to_db():
 #######################################
 def find_similar_chunks(target_vector, top_n=5):
     """
-    Find the top N chunks in e_chunkvectors2 by using pgvector-based similarity search.
+    Find the top N chunks in e_chunks_simple by using pgvector-based similarity search.
     """
     conn, cursor = connect_to_db()
     try:
@@ -83,16 +83,12 @@ def find_similar_chunks(target_vector, top_n=5):
         # Use a consistent placeholder name in the query and in .format(...)
         query = sql.SQL("""
             SELECT
-                chunk_id,
-                e_bern_raw_id,
-                doc_name,
-                doc_path,
+                id,
+                e_bern_parsed_id,
                 chunk_text,
-                section_level,
-                section_name,
-                1 - ((chunk_embedding <=> {vec}::vector(1536))/2) AS similarity
-            FROM e_chunkvectors2
-            WHERE chunk_embedding IS NOT NULL
+                1 - ((chunk_vector <=> {vec}::vector(1536))/2) AS similarity
+            FROM e_chunks_simple
+            WHERE chunk_vector IS NOT NULL
             ORDER BY similarity DESC
             LIMIT %s
         """).format(vec=vector_literal)  # match {vec} in the query to vec=vector_literal
@@ -133,23 +129,18 @@ def index():
         # Convert rows to a list of dicts for easier template usage
         results = []
         for row in similar_rows:
-            (chunk_id, e_bern_raw_id, doc_name, doc_path,
-             chunk_text, section_level, section_name, similarity) = row
+            (id, e_bern_parsed_id, chunk_text, similarity) = row
             
             similarity_val = float(similarity)
 
             results.append({
-                "chunk_id": chunk_id,
-                "e_bern_raw_id": e_bern_raw_id,
+                "id": id,
+                "e_bern_parsed_id": e_bern_parsed_id,
                 "similarity": f"{similarity_val:.4f}",
-                "doc_name": doc_name,
-                "doc_path": doc_path,
                 "chunk_text": chunk_text,
-                "section_level": section_level,
-                "section_name": section_name,
             })
 
-        return render_template("results3.html", user_input=user_input, results=results)
+        return render_template("results4.html", user_input=user_input, results=results)
 
     # On GET, just render the search form
     return render_template("index.html")

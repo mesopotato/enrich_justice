@@ -24,3 +24,13 @@ docker run -p 5010:5001 ghcr.io/nlmatics/nlm-ingestor:latest
 ### verify that the server is running by navigating to http://localhost:5010/ in your web browser
 
 
+# process_dfs_to_chunks.py
+This script loads pdfs from a directory, hierarchically parses the pdfs, chunks and embeds the text and stores the chunk text and the vectors in `e_chunkvectors` table in the db database.
+
+The corresponding frontend is `front3.py` which allows to enter a term which is embedded and then compared to the vectors in `e_chunkvectors`. The top 5 results are returned.
+
+# process_txt_to_chunks.py
+This script chunks text from the db table `e_bern_parsed`. It is a simple chunker (chunk size = 512 tokens, overlap = 20). The chunks are embedded and stored as text and vectors in table ` e_chunks_simple`.
+
+The corresponding frontend is `front4.py`.
+
