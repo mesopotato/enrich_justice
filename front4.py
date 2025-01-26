@@ -83,12 +83,14 @@ def find_similar_chunks(target_vector, top_n=5):
         # Use a consistent placeholder name in the query and in .format(...)
         query = sql.SQL("""
             SELECT
-                id,
-                e_bern_parsed_id,
-                chunk_text,
-                1 - ((chunk_vector <=> {vec}::vector(1536))/2) AS similarity
+                e_chunks_simple.id,
+                e_chunks_simple.e_bern_parsed_id,
+                e_chunks_simple.chunk_text,
+                e_bern_parsed.file_path,
+                1 - ((e_chunks_simple.chunk_vector <=> {vec}::vector(1536))/2) AS similarity
             FROM e_chunks_simple
-            WHERE chunk_vector IS NOT NULL
+            join e_bern_parsed on e_chunks_simple.e_bern_parsed_id = e_bern_parsed.id
+            WHERE e_chunks_simple.chunk_vector IS NOT NULL
             ORDER BY similarity DESC
             LIMIT %s
         """).format(vec=vector_literal)  # match {vec} in the query to vec=vector_literal
@@ -129,7 +131,7 @@ def index():
         # Convert rows to a list of dicts for easier template usage
         results = []
         for row in similar_rows:
-            (id, e_bern_parsed_id, chunk_text, similarity) = row
+            (id, e_bern_parsed_id, chunk_text, file_path, similarity) = row
             
             similarity_val = float(similarity)
 
@@ -138,6 +140,7 @@ def index():
                 "e_bern_parsed_id": e_bern_parsed_id,
                 "similarity": f"{similarity_val:.4f}",
                 "chunk_text": chunk_text,
+                "file_path": file_path
             })
 
         return render_template("results4.html", user_input=user_input, results=results)
